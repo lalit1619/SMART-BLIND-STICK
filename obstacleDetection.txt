@@ -1,0 +1,84 @@
+/ Rain Sensor Setup
+const int rainSensorPin = A3;
+const int rainThreshold = 300; // Threshold for rain detection
+
+// Obstacle Detection Setup
+const int trigPin = 9;
+const int echoPin = 10;
+const int safetyDistance = 30; // Distance threshold for obstacle detection
+
+// Buzzer Setup
+const int buzzerPin = 11;
+
+// Variables
+long duration;
+int distance;
+bool rainDetected = false; // Flag to track rain detection
+
+void setup() {
+  // Serial and pin configurations
+  Serial.begin(9600);          // Enable serial monitor
+  pinMode(buzzerPin, OUTPUT);   // Define buzzer pin
+  pinMode(trigPin, OUTPUT);     // Define trig pin for obstacle detection
+  pinMode(echoPin, INPUT);      // Define echo pin for obstacle detection
+}
+
+void loop() {
+  // Read rain sensor value
+  int rainValue = analogRead(rainSensorPin);
+  Serial.print("Rain Sensor Value: ");
+  Serial.println(rainValue);
+
+  // Rain detection check
+  if (rainValue < rainThreshold && !rainDetected) { // Rain detected
+    Serial.println("Heavy rain detected, buzzer on for 5 seconds");
+    rainDetected = true;        // Set rain detected flag
+    digitalWrite(buzzerPin, HIGH); // Turn on buzzer
+    delay(5000);                // Keep the buzzer on for 5 seconds
+    digitalWrite(buzzerPin, LOW);  // Turn off buzzer after 5 seconds
+  } 
+  else if (rainValue >= rainThreshold) {
+    // Reset rain detected flag if no rain is detected
+    rainDetected = false;
+    // Check for obstacle detection if rain is not detected
+    detectObstacle();
+  }
+
+  delay(100); // Short delay to avoid serial flooding
+}
+
+// Function to detect obstacle and beep in pulses if within safety distance
+void detectObstacle() {
+  // Clears the trigPin
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+
+  // Sets the trigPin on HIGH state for 10 microseconds
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  duration = pulseIn(echoPin, HIGH);
+
+  // Calculating the distance
+  distance = duration * 0.034 / 2;
+
+  // If object is within the safety distance, make the buzzer beep in pulses
+  if (distance <= safetyDistance) {
+    Serial.print("Obstacle detected within ");
+    Serial.print(safetyDistance);
+    Serial.println(" cm, pulsing buzzer on");
+    digitalWrite(buzzerPin, HIGH); // Turn buzzer on
+    delay(100);                    // Short delay for beep pattern
+    digitalWrite(buzzerPin, LOW);   // Turn buzzer off briefly
+    delay(100);                    // Short delay for beep interval
+  } 
+  else {
+    digitalWrite(buzzerPin, LOW); // Turn off the buzzer if no obstacle
+  }
+
+  // Prints the distance on the Serial Monitor
+  Serial.print("Distance: ");
+  Serial.println(distance);
+}
